@@ -69,7 +69,8 @@ public class TapTalkLive {
     private static String appKeySecret = "";
     private static int clientAppIcon;
     private static boolean isNeedToGetProjectConfigs;
-    private static boolean isTapTalkInitialized; // TODO TEMPORARY
+    private static boolean isTapTalkInitialized;
+    private static boolean isGetCaseListCompleted;
     private static TapTalkLiveListener tapTalkLiveListener;
 
     private TapTalkLive(@NonNull final Context appContext,
@@ -112,7 +113,7 @@ public class TapTalkLive {
                                    int clientAppIcon,
                                    String clientAppName,
                                    TapTalkLiveListener tapTalkLiveListener) {
-        isTapTalkInitialized = false; // TODO TEMPORARY
+        isTapTalkInitialized = false;
         if (null == tapLive) {
             tapLive = new TapTalkLive(
                     context,
@@ -195,11 +196,29 @@ public class TapTalkLive {
                     null != response &&
                             null != response.getCases() &&
                             !response.getCases().isEmpty());
+            onFinish();
+        }
+
+        @Override
+        public void onError(TTLErrorModel error) {
+            onFinish();
+        }
+
+        @Override
+        public void onError(String errorMessage) {
+            onFinish();
+        }
+
+        private void onFinish() {
+            isGetCaseListCompleted = true;
+            if (isTapTalkInitialized) {
+                tapTalkLiveListener.onInitializationCompleted();
+            }
         }
     };
 
     private static void initializeTapTalkSDK(String tapTalkAppKeyID, String tapTalkAppKeySecret, String tapTalkApiUrl) {
-        if (isTapTalkInitialized) { // TODO TEMPORARY
+        if (isTapTalkInitialized) {
             return;
         }
         TapTalk.setLoggingEnabled(BuildConfig.DEBUG);
@@ -213,7 +232,6 @@ public class TapTalkLive {
                 tapTalkApiUrl,
                 TapTalkImplementationTypeCombine,
                 tapListener);
-        isTapTalkInitialized = true; // TODO TEMPORARY
 
         TapUI.getInstance(TAPTALK_INSTANCE_KEY).setReadStatusHidden(true);
         TapUI.getInstance(TAPTALK_INSTANCE_KEY).setCloseButtonInRoomListVisible(true);
@@ -233,7 +251,22 @@ public class TapTalkLive {
         TapUI.getInstance(TAPTALK_INSTANCE_KEY).removeCustomKeyboardListener(customKeyboardListener);
         TapUI.getInstance(TAPTALK_INSTANCE_KEY).addCustomKeyboardListener(customKeyboardListener);
 
-        tapTalkLiveListener.onInitializationCompleted();
+        if (!TapTalk.isConnected(TAPTALK_INSTANCE_KEY)) {
+            TapTalk.connect(TAPTALK_INSTANCE_KEY, new TapCommonListener() {
+                @Override
+                public void onSuccess(String s) {
+                    isTapTalkInitialized = true;
+                    if (isGetCaseListCompleted) {
+                        tapTalkLiveListener.onInitializationCompleted();
+                    }
+                }
+            });
+        } else {
+            isTapTalkInitialized = true;
+            if (isGetCaseListCompleted) {
+                tapTalkLiveListener.onInitializationCompleted();
+            }
+        }
     }
 
     private static TTLSystemMessageBubbleClass closeCaseCustomBubble = new TTLSystemMessageBubbleClass(
@@ -406,7 +439,7 @@ public class TapTalkLive {
     }
 
     public static boolean openTapTalkLiveView(Context activityContext) {
-        if (!isTapTalkInitialized) { // TODO CALL TapTalk.checkTapTalkInitialized
+        if (!isTapTalkInitialized) {
             return false;
         }
         TapUI.getInstance(TAPTALK_INSTANCE_KEY).openRoomList(activityContext);
@@ -414,7 +447,7 @@ public class TapTalkLive {
         if (!TTLDataManager.getInstance().checkActiveUserExists() ||
                 !TTLDataManager.getInstance().checkAccessTokenAvailable() ||
                 !TTLDataManager.getInstance().activeUserHasExistingCase()) {
-            openCreateCaseForm(activityContext, false);
+            openCreateCaseForm(activityContext, true);
         }
         return true;
     }
