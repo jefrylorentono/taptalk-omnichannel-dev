@@ -12,6 +12,7 @@ android {
         targetSdkVersion 29
         versionCode 2
         versionName "1.0.2-BETA3"
+        defaultPublishConfig "dev"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
