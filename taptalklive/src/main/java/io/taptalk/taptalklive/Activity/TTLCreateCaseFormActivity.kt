@@ -80,6 +80,7 @@ class TTLCreateCaseFormActivity : AppCompatActivity() {
             et_email_address.visibility = View.VISIBLE
             et_full_name.onFocusChangeListener = formFocusListener
             et_email_address.onFocusChangeListener = formFocusListener
+            vm.openRoomListOnComplete = true
         }
         et_message.onFocusChangeListener = formFocusListener
 
@@ -420,8 +421,12 @@ class TTLCreateCaseFormActivity : AppCompatActivity() {
     }
 
     private fun openCaseChatRoom(tapTalkXCRoomID: String) {
+        TTLDataManager.getInstance().saveActiveUserHasExistingCase(true)
         TapCoreChatRoomManager.getInstance(TAPTALK_INSTANCE_KEY).getChatRoomByXcRoomID(tapTalkXCRoomID, object : TapCoreGetRoomListener() {
             override fun onSuccess(roomModel: TAPRoomModel?) {
+                if (vm.openRoomListOnComplete) {
+                    TapUI.getInstance(TAPTALK_INSTANCE_KEY).openRoomList(this@TTLCreateCaseFormActivity)
+                }
                 TapUI.getInstance(TAPTALK_INSTANCE_KEY).openChatRoomWithRoomModel(this@TTLCreateCaseFormActivity, roomModel)
                 finish()
             }
