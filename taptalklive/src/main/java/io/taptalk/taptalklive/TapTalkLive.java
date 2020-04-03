@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -104,7 +105,14 @@ public class TapTalkLive {
 
         if (TTLDataManager.getInstance().checkActiveUserExists()) {
             // Check if user has active case
+            Log.e(TAG, "TapTalkLive: getCaseList");
             TTLDataManager.getInstance().getCaseList(caseListDataView);
+        } else {
+            Log.e(TAG, "TapTalkLive: active user not found, construct completed.");
+            isGetCaseListCompleted = true;
+            if (isTapTalkInitialized) {
+                tapTalkLiveListener.onInitializationCompleted();
+            }
         }
     }
 
@@ -192,6 +200,7 @@ public class TapTalkLive {
     private static TTLDefaultDataView<TTLGetCaseListResponse> caseListDataView = new TTLDefaultDataView<TTLGetCaseListResponse>() {
         @Override
         public void onSuccess(TTLGetCaseListResponse response) {
+            Log.e(TAG, "caseListDataView onSuccess: " + response.getCases().size());
             TTLDataManager.getInstance().saveActiveUserHasExistingCase(
                     null != response &&
                             null != response.getCases() &&
@@ -201,15 +210,18 @@ public class TapTalkLive {
 
         @Override
         public void onError(TTLErrorModel error) {
+            Log.e(TAG, "caseListDataView onError: " + error.getMessage());
             onFinish();
         }
 
         @Override
         public void onError(String errorMessage) {
+            Log.e(TAG, "caseListDataView onError: " + errorMessage);
             onFinish();
         }
 
         private void onFinish() {
+            Log.e(TAG, "caseListDataView onFinish: ");
             isGetCaseListCompleted = true;
             if (isTapTalkInitialized) {
                 tapTalkLiveListener.onInitializationCompleted();
@@ -252,9 +264,20 @@ public class TapTalkLive {
         TapUI.getInstance(TAPTALK_INSTANCE_KEY).addCustomKeyboardListener(customKeyboardListener);
 
         if (!TapTalk.isConnected(TAPTALK_INSTANCE_KEY)) {
+            Log.e(TAG, "initializeTapTalkSDK: not connected, connecting...");
             TapTalk.connect(TAPTALK_INSTANCE_KEY, new TapCommonListener() {
                 @Override
                 public void onSuccess(String s) {
+                    Log.e(TAG, "connect onSuccess: TapTalk initialized");
+                    isTapTalkInitialized = true;
+                    if (isGetCaseListCompleted) {
+                        tapTalkLiveListener.onInitializationCompleted();
+                    }
+                }
+
+                @Override
+                public void onError(String s, String s1) {
+                    Log.e(TAG, "connect onError: TapTalk initialized");
                     isTapTalkInitialized = true;
                     if (isGetCaseListCompleted) {
                         tapTalkLiveListener.onInitializationCompleted();
@@ -262,6 +285,7 @@ public class TapTalkLive {
                 }
             });
         } else {
+            Log.e(TAG, "initializeTapTalkSDK: connected, TapTalk initialized");
             isTapTalkInitialized = true;
             if (isGetCaseListCompleted) {
                 tapTalkLiveListener.onInitializationCompleted();
@@ -442,12 +466,16 @@ public class TapTalkLive {
         if (!isTapTalkInitialized) {
             return false;
         }
-        TapUI.getInstance(TAPTALK_INSTANCE_KEY).openRoomList(activityContext);
-//        openCaseList(activityContext); // TODO: 20 Feb 2020 TEMPORARILY DISABLED CASE LIST PAGE
+        Log.e(TAG, "openTapTalkLiveView: checkActiveUserExists " + TTLDataManager.getInstance().checkActiveUserExists());
+        Log.e(TAG, "openTapTalkLiveView: checkAccessTokenAvailable " + TTLDataManager.getInstance().checkAccessTokenAvailable());
+        Log.e(TAG, "openTapTalkLiveView: activeUserHasExistingCase " + TTLDataManager.getInstance().activeUserHasExistingCase());
         if (!TTLDataManager.getInstance().checkActiveUserExists() ||
                 !TTLDataManager.getInstance().checkAccessTokenAvailable() ||
                 !TTLDataManager.getInstance().activeUserHasExistingCase()) {
             openCreateCaseForm(activityContext, true);
+        } else {
+            TapUI.getInstance(TAPTALK_INSTANCE_KEY).openRoomList(activityContext);
+//        openCaseList(activityContext); // TODO: 20 Feb 2020 TEMPORARILY DISABLED CASE LIST PAGE
         }
         return true;
     }
