@@ -469,13 +469,13 @@ public class TapTalkLive {
         Log.e(TAG, "openTapTalkLiveView: checkActiveUserExists " + TTLDataManager.getInstance().checkActiveUserExists());
         Log.e(TAG, "openTapTalkLiveView: checkAccessTokenAvailable " + TTLDataManager.getInstance().checkAccessTokenAvailable());
         Log.e(TAG, "openTapTalkLiveView: activeUserHasExistingCase " + TTLDataManager.getInstance().activeUserHasExistingCase());
-        if (!TTLDataManager.getInstance().checkActiveUserExists() ||
-                !TTLDataManager.getInstance().checkAccessTokenAvailable() ||
-                !TTLDataManager.getInstance().activeUserHasExistingCase()) {
-            openCreateCaseForm(activityContext, true);
-        } else {
+        if (TTLDataManager.getInstance().checkActiveUserExists() ||
+                TTLDataManager.getInstance().checkAccessTokenAvailable()) {
             TapUI.getInstance(TAPTALK_INSTANCE_KEY).openRoomList(activityContext);
 //        openCaseList(activityContext); // TODO: 20 Feb 2020 TEMPORARILY DISABLED CASE LIST PAGE
+        }
+        if (!TTLDataManager.getInstance().activeUserHasExistingCase()) {
+            openCreateCaseForm(activityContext, true);
         }
         return true;
     }
